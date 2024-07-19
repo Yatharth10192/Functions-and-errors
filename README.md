@@ -11,42 +11,56 @@ To run this program, you can use Remix, an online Solidity IDE. To get started, 
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-contract AddressManager {
+contract AccessControl {
     address public owner;
-    mapping(address => bool) public approvedAddresses;
+    mapping(address => bool) public authorizedUsers;
 
-    // Modifier to restrict access to the owner
-    modifier onlyOwner() {
-        require(msg.sender == owner, "Only owner can call this function");
-        _;
-    }
+    event UserAuthorized(address indexed user);
+    event UserUnauthorized(address indexed user);
 
-    // Constructor to set the owner
     constructor() {
         owner = msg.sender;
     }
 
-    // Function to add an address to the approved list
-    function addAddress(address _address) public onlyOwner {
-        require(_address != address(0), "Invalid address");
-        approvedAddresses[_address] = true;
-        assert(approvedAddresses[_address] == true);
+    // Modifier to check if the caller is the owner
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Not the contract owner");
+        _;
     }
 
-    // Function to remove an address from the approved list
-    function removeAddress(address _address) public onlyOwner {
-        require(_address != address(0), "Invalid address");
-        require(approvedAddresses[_address], "Address not approved");
-        approvedAddresses[_address] = false;
-        assert(approvedAddresses[_address] == false);
+    // Function to authorize a user
+    function authorizeUser(address user) public onlyOwner {
+        require(user != address(0), "Invalid address");
+        authorizedUsers[user] = true;
+        emit UserAuthorized(user);
     }
 
-    // Function to check if an address is approved
-    function isApproved(address _address) public view returns (bool) {
-        if (_address == address(0)) {
-            revert("Invalid address");
+    // Function to deauthorize a user
+    function deauthorizeUser(address user) public onlyOwner {
+        require(authorizedUsers[user], "User not authorized");
+        authorizedUsers[user] = false;
+        emit UserUnauthorized(user);
+    }
+
+    // Function to perform an action that requires authorization
+    function performRestrictedAction() public {
+        require(authorizedUsers[msg.sender], "User not authorized");
+
+        // Some action that only authorized users can perform
+        // Example: Changing the owner (just for illustration purposes)
+        owner = msg.sender;
+    }
+
+    // Function to demonstrate assert and revert
+    function criticalFunction(uint256 value) public pure {
+        // This function requires the input value to be even
+        if (value % 2 != 0) {
+            revert("Input value must be even");
         }
-        return approvedAddresses[_address];
+
+        // Assert to check an internal state or condition
+        uint256 result = value / 2;
+        assert(result * 2 == value);
     }
 }
 After this compile the code and then deploy it. After deploying it we can test different functions i.e. deposit, withdraw and check balance etc. The errors we encounter can give us great insights about error handeling.
